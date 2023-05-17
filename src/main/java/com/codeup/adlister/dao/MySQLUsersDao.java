@@ -1,42 +1,45 @@
 package com.codeup.adlister.dao;
 
 import com.codeup.adlister.models.User;
+import com.mysql.cj.jdbc.Driver;
+import config.Config;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class MySQLUsersDao implements Users {
-    public Connection connection;
-    public MySQLUsersDao(User user) {}
+    private final Connection connection;
+
+    public MySQLUsersDao(Config config) {
+        try {
+            DriverManager.registerDriver(new Driver());
+            connection = DriverManager.getConnection(
+                    config.getUrl(),
+                    config.getUser(),
+                    config.getPassword()
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException("Error connecting to the database!", e);
+        }
+    }
+
 
     @Override
     public User findByUsername(String username) {
+        String query = "SELECT * FROM users WHERE username = ? LIMIT 1";
         try {
-            String sql = "SELECT * FROM users WHERE username = ?";
-            PreparedStatement stmt = connection.prepareStatement(sql);
+            PreparedStatement stmt = connection.prepareStatement(query);
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.getString("username").equals(username)){
-                return new User(
-                        rs.getLong("id"),
-                        rs.getString("username"),
-                        rs.getString("email"),
-                        rs.getString("password")
-                );
-            }
+            return extractUser(stmt.executeQuery());
         } catch (SQLException e) {
             throw new RuntimeException("Error finding a user by username", e);
         }
-        return null;
     }
 
     @Override
     public Long insert(User user) {
+        String query = "INSERT INTO users(username, email, password) VALUES (?, ?, ?)";
         try {
-            String sql = "INSERT INTO users(username, email, password) VALUES (?, ?, ?)";
-            PreparedStatement stmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getEmail());
             stmt.setString(3, user.getPassword());
@@ -48,4 +51,17 @@ public class MySQLUsersDao implements Users {
             throw new RuntimeException("Error creating new user", e);
         }
     }
+
+    private User extractUser(ResultSet rs) throws SQLException {
+        if (!rs.next()) {
+            return null;
+        }
+        return new User(
+                rs.getLong("id"),
+                rs.getString("username"),
+                rs.getString("email"),
+                rs.getString("password")
+        );
+    }
+
 }
