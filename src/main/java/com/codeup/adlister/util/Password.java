@@ -1,5 +1,6 @@
 package com.codeup.adlister.util;
 
+
 import org.mindrot.jbcrypt.BCrypt;
 
 public class Password {

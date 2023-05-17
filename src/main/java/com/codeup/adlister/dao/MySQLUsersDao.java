@@ -2,11 +2,12 @@ package com.codeup.adlister.dao;
 
 import com.codeup.adlister.models.User;
 import com.mysql.cj.jdbc.Driver;
+import config.Config;
 
 import java.sql.*;
 
 public class MySQLUsersDao implements Users {
-    private Connection connection;
+    private final Connection connection;
 
     public MySQLUsersDao(Config config) {
         try {
@@ -52,7 +53,7 @@ public class MySQLUsersDao implements Users {
     }
 
     private User extractUser(ResultSet rs) throws SQLException {
-        if (! rs.next()) {
+        if (!rs.next()) {
             return null;
         }
         return new User(
